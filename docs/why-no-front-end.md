@@ -1,24 +1,25 @@
 # Why there is no front end
 
-Better Impact is a database with a subscription. The tables underneath it are ordinary: a few entities, a few relationships, a handful of workflows you repeat every week. What you pay for is the layer on top that lets people who do not write SQL get at those tables. Screens, filters, dashboards, forms.
+Better Impact is a database with a subscription. The tables underneath it are ordinary: volunteers, their checks and training, roles, shifts, who is on each, the hours they gave. What you pay for, by volunteer count and tier, is the layer on top that lets coordinators who do not write queries get at those tables. Screens, filters, reports, forms.
 
-That layer used to be the whole product, because talking to a database was hard. It is not hard any more. Open this folder in Claude Code, describe what you want, and it writes the query, runs it, and explains the answer. Ask a question the dashboard never had a chart for and you still get an answer.
+That layer used to be the whole product, because talking to a database was hard. It is not hard any more. Open this folder in Claude Code, ask "who is cleared to fill Saturday's sorting room?", and it runs the query and answers. Ask a question the reports never had a page for and you still get an answer.
 
 ## What you gain
 
-- **Better answers.** A dashboard shows what the vendor decided to chart. Here you ask your own question, in your own words, and get it answered against your own data.
-- **No seats.** Everyone who needs to look can look. The bill does not grow with headcount.
-- **Your data in your Postgres.** Plain tables. Back them up, query them from anything, leave any time. There is no export step because there is nothing to leave.
-- **A process that matches you.** When your way of working changes, you add a command. You do not wait for a feature request to clear.
+- **Better answers.** Which volunteers gave more than 40 hours last year and have not been thanked? Who drives on Wednesdays and has a police check running out before Christmas? Those are one question each.
+- **No count of volunteers on the bill.** A program that grows does not move up a pricing tier.
+- **Your records in your own database.** Back them up, query them from anything, leave any time.
+- **Rules that match your policy.** When your screening rules change, the gate changes the same day.
 
 ## What you give up
 
-- **A visual board.** Stages are a table you ask about, not cards you drag.
-- **A phone app.** It runs where Claude Code runs.
-- **A vendor help desk.** This is open source. Enterprise DNA supports the installed version for businesses that want someone to call.
+- **A volunteer app.** Better Impact's volunteers sign in to pick shifts and log hours. Here, a coordinator does that for them, or Enterprise DNA builds a simple screen on this database.
+- **A calendar to drag shifts around.** The roster is a list you ask about and change in words.
+- **Automatic email and text.** Reminders draft to files; a person sends them. Connecting a sending service is a customisation.
+- **A vendor help desk.** This is open source. Enterprise DNA supports the installed version for organisations that want someone to call.
 
 ## Who this fits
 
-Small teams who already use Claude Code, or who would rather learn to ask than learn another interface. If your team needs a screen to look at all day, keep Better Impact. If you need the answers more than the screens, this is cheaper, faster and yours.
+Programs where a few coordinators run the roster and the records, and volunteers mostly hear from a person. If hundreds of volunteers book their own shifts every week on their phones, you need that screen: keep Better Impact, or have the screen built on top of this.
 
 Installed and run for you: https://enterprisedna.co/omni/instead-of/better-impact

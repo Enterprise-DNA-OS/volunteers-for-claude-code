@@ -1,13 +1,45 @@
 [
   {
     "name": "week",
-    "title": "This week",
-    "subtitle": "Volunteers for Claude Code: what needs attention, rendered by npm run view",
+    "title": "This week in the volunteer program",
+    "subtitle": "Volunteers for Claude Code: what needs a decision, the roster ahead and the checks running out, rendered by npm run view",
     "sections": [
       {
-        "title": "Needs attention",
-        "note": "TODO(author): point this at the industry's attention view (overdue, stuck, quiet).",
-        "sql": "select 'replace me' as item, 'TODO(author)' as why"
+        "title": "Needs a decision",
+        "note": "Worst first. Anyone rostered without clearance, a barred check or an unreported notifiable incident outranks everything.",
+        "sql": "select reason as why, label as record, who, program, days, detail from v_attention order by rank, days desc nulls last"
+      },
+      {
+        "title": "The next 14 days",
+        "note": "Filled against needed. A shift with someone not cleared shows it in the last column.",
+        "sql": "select s.ref as shift, to_char(s.shift_on, 'Dy DD Mon') as day, to_char(s.starts, 'HH24:MI') || '-' || to_char(s.ends, 'HH24:MI') as time, s.role, s.location as place, s.filled || ' of ' || s.needed as filled, (select count(*) from v_roster_problems p where p.shift = s.ref) as not_cleared from v_shifts s where s.status = 'open' and s.shift_on between current_date and current_date + 14 order by s.shift_on, s.starts"
+      },
+      {
+        "title": "Checks to act on",
+        "note": "Expired, unverified, barred, or running out inside 60 days.",
+        "sql": "select volunteer_ref as ref, volunteer, check_name(kind, jurisdiction) as check_held, number, to_char(good_until, 'YYYY-MM-DD') as good_until, state from v_checks where volunteer_status in ('active', 'applicant') and (state not in ('CURRENT', 'WITHDRAWN') or good_until <= current_date + 60) order by array_position(array['BARRED','EXPIRED','NOT VERIFIED','PENDING','EXPIRING'], state), good_until"
+      }
+    ]
+  },
+  {
+    "name": "hours",
+    "title": "Hours and people",
+    "subtitle": "Volunteer hours by program, who has stopped coming and who has earned a thank you, rendered by npm run view",
+    "sections": [
+      {
+        "title": "Hours by program and month",
+        "note": "Approved hours only, the last six months.",
+        "sql": "select program, to_char(period, 'Mon YYYY') as month, volunteers, round(minutes / 60.0, 1) as hours from v_program_hours where period >= date_trunc('month', current_date) - interval '5 months' order by program, period"
+      },
+      {
+        "title": "Quietly stopped coming",
+        "note": "Active, nothing rostered, no shift or hours for longer than settings.quiet_after_days.",
+        "sql": "select v.ref, v.name, to_char(greatest(v.last_shift_on, v.last_hours_on, v.started_on), 'YYYY-MM-DD') as last_seen, current_date - greatest(v.last_shift_on, v.last_hours_on, v.started_on) as days, round(v.minutes_total / 60.0) as hours_all_time from v_volunteers v cross join settings s where v.status = 'active' and v.next_shift_on is null and greatest(v.last_shift_on, v.last_hours_on, v.started_on) <= current_date - s.quiet_after_days order by days desc"
+      },
+      {
+        "title": "Milestones to recognise",
+        "note": "Earned and not yet marked.",
+        "sql": "select ref, name, milestone from v_milestones order by ref"
       }
     ]
   }

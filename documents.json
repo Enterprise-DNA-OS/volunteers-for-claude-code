@@ -1,11 +1,78 @@
 [
   {
-    "name": "example",
-    "title": "TODO(author): the first document this industry must produce",
-    "for_each": "select gen_random_uuid() as id, 'Example' as name",
+    "name": "hours-statement",
+    "title": "Statement of volunteer hours",
+    "for_each": "select id, ref || ' ' || first_name || ' ' || last_name as name from volunteers where status in ('active', 'inactive', 'former') and exists (select 1 from hours h where h.volunteer_id = volunteers.id and h.approved_on is not null) order by ref",
     "file": "name",
     "sections": [
-      { "title": "Details", "sql": "select 'replace me' as item, $1::text as record_id" }
+      {
+        "title": "The volunteer",
+        "sql": "select v.first_name || ' ' || v.last_name as volunteer, v.ref, to_char(v.started_on, 'DD Month YYYY') as volunteering_since, s.org_name as organisation from volunteers v cross join settings s where v.id = $1"
+      },
+      {
+        "title": "Hours by program, the last twelve months",
+        "sql": "select p.name as program, string_agg(distinct coalesce(r.name, h.activity), ', ') as roles, count(*) as entries, round(sum(h.minutes) / 60.0, 1) as hours from hours h join programs p on p.id = h.program_id left join roles r on r.id = h.role_id where h.volunteer_id = $1 and h.approved_on is not null and h.worked_on >= current_date - 365 group by p.name order by 4 desc"
+      },
+      {
+        "title": "All time",
+        "sql": "select round(sum(minutes) / 60.0, 1) as total_hours, to_char(min(worked_on), 'DD Month YYYY') as first_recorded, to_char(max(worked_on), 'DD Month YYYY') as most_recent from hours where volunteer_id = $1 and approved_on is not null"
+      }
+    ]
+  },
+  {
+    "name": "funder-report",
+    "title": "Volunteer contribution report",
+    "for_each": "select id, ref || ' ' || name as name from programs where status = 'active' order by ref",
+    "file": "name",
+    "sections": [
+      {
+        "title": "The program",
+        "sql": "select p.name as program, coalesce(p.funder, 'not recorded') as funder, st.name as coordinator, (select org_name from settings) as organisation from programs p left join staff st on st.id = p.coordinator_id where p.id = $1"
+      },
+      {
+        "title": "This financial year to date",
+        "sql": "select count(distinct h.volunteer_id) as volunteers, count(*) as entries, round(sum(h.minutes) / 60.0, 1) as hours from hours h cross join settings s where h.program_id = $1 and h.approved_on is not null and h.worked_on >= make_date(extract(year from current_date)::int - case when extract(month from current_date) < s.fy_start_month then 1 else 0 end, s.fy_start_month, 1)"
+      },
+      {
+        "title": "By month",
+        "sql": "select to_char(period, 'Mon YYYY') as month, volunteers, round(minutes / 60.0, 1) as hours from v_program_hours where program_id = $1 and period >= date_trunc('month', current_date) - interval '11 months' order by period"
+      },
+      {
+        "title": "Roles",
+        "sql": "select r.name as role, count(distinct h.volunteer_id) as volunteers, round(coalesce(sum(h.minutes), 0) / 60.0, 1) as hours_last_12_months from roles r left join hours h on h.role_id = r.id and h.approved_on is not null and h.worked_on >= current_date - 365 where r.program_id = $1 group by r.name order by 3 desc"
+      }
+    ]
+  },
+  {
+    "name": "screening-record",
+    "title": "Volunteer screening record",
+    "for_each": "select id, ref || ' ' || first_name || ' ' || last_name as name from volunteers where status in ('active', 'applicant') order by ref",
+    "file": "name",
+    "sections": [
+      {
+        "title": "The volunteer",
+        "sql": "select ref, first_name || ' ' || last_name as volunteer, status, stage, to_char(applied_on, 'YYYY-MM-DD') as applied, to_char(interviewed_on, 'YYYY-MM-DD') as interviewed, to_char(references_ok_on, 'YYYY-MM-DD') as references_checked, coalesce(guardian_name || ' on ' || to_char(guardian_consent_on, 'YYYY-MM-DD'), '') as guardian_consent from volunteers where id = $1"
+      },
+      {
+        "title": "Checks",
+        "sql": "select check_name(c.kind, c.jurisdiction) as check_held, c.number, to_char(c.issued_on, 'YYYY-MM-DD') as issued, to_char(c.good_until, 'YYYY-MM-DD') as good_until, to_char(c.verified_on, 'YYYY-MM-DD') as verified, coalesce(st.name, '') as verified_by, c.state from v_checks c left join checks x on x.id = c.id left join staff st on st.id = x.verified_by where c.volunteer_id = $1 order by c.kind"
+      },
+      {
+        "title": "Training",
+        "sql": "select course, to_char(completed_on, 'YYYY-MM-DD') as completed, coalesce(to_char(expires_on, 'YYYY-MM-DD'), '') as expires, state from v_training where volunteer_id = $1 order by course"
+      }
+    ]
+  },
+  {
+    "name": "recognition-certificate",
+    "title": "Thank you",
+    "for_each": "select r.id, v.first_name || ' ' || v.last_name || ' ' || r.milestone as name from recognitions r join volunteers v on v.id = r.volunteer_id where r.awarded_on >= current_date - 60 order by r.awarded_on desc",
+    "file": "name",
+    "sections": [
+      {
+        "title": "In recognition of",
+        "sql": "select v.first_name || ' ' || v.last_name as volunteer, r.milestone, to_char(r.awarded_on, 'DD Month YYYY') as awarded, s.org_name as from_organisation from recognitions r join volunteers v on v.id = r.volunteer_id cross join settings s where r.id = $1"
+      }
     ]
   }
 ]
